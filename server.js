@@ -205,6 +205,7 @@ const app = express();
 app.use(cors({
   origin: [
     "https://thenaturemist.myshopify.com",
+    "https://thenaturemist.com",
     "http://localhost:3000"
   ]
 }));
