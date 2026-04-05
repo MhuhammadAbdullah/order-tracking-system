@@ -153,36 +153,111 @@
 
 
 
+// // PERFACT CODE DEPLOYED
+
+// // server.js
+// import express from "express";
+// import dotenv from "dotenv";
+
+// dotenv.config(); // <-- correct way in ESM
+
+// const app = express();
+// const PORT = process.env.PORT || 3000;
+// const POSTEX_TOKEN = process.env.MY_POSTEX_TOKEN;
+
+// // Node v18+ me fetch built-in hai, ES module me direct use ho sakta hai
+// app.get("/api/track", async (req, res) => {
+//   try {
+//     const tracking = req.query.tracking;
+//     if (!tracking) return res.status(400).json({ success: false, message: "Tracking number required" });
+
+//     const response = await fetch(`https://api.postex.pk/services/integration/api/order/v1/track-order/${tracking}`, {
+//       method: "GET",
+//       headers: { token: POSTEX_TOKEN, "Content-Type": "application/json" }
+//     });
+
+//     const data = await response.json();
+
+//     res.json(data.dist); // ya pura data.json() agar aapko success/error messages bhi chahiye
+//   } catch (error) {
+//     console.error("Tracking API Error:", error);
+//     res.status(500).json({ success: false, message: "Server error while fetching tracking data" });
+//   }
+// });
+
+// app.listen(PORT, () => console.log(`Tracking API running on http://localhost:${PORT}`));
+
+
+
+
 
 
 // server.js
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 
-dotenv.config(); // <-- correct way in ESM
+dotenv.config();
 
 const app = express();
+
+// ✅ CORS (Shopify + local testing dono allow)
+app.use(cors({
+  origin: [
+    "https://thenaturemist.myshopify.com",
+    "http://localhost:3000"
+  ]
+}));
+
 const PORT = process.env.PORT || 3000;
 const POSTEX_TOKEN = process.env.MY_POSTEX_TOKEN;
 
-// Node v18+ me fetch built-in hai, ES module me direct use ho sakta hai
+// ✅ Route
 app.get("/api/track", async (req, res) => {
   try {
     const tracking = req.query.tracking;
-    if (!tracking) return res.status(400).json({ success: false, message: "Tracking number required" });
 
-    const response = await fetch(`https://api.postex.pk/services/integration/api/order/v1/track-order/${tracking}`, {
-      method: "GET",
-      headers: { token: POSTEX_TOKEN, "Content-Type": "application/json" }
-    });
+    if (!tracking) {
+      return res.status(400).json({
+        success: false,
+        message: "Tracking number required"
+      });
+    }
+
+    const response = await fetch(
+      `https://api.postex.pk/services/integration/api/order/v1/track-order/${tracking}`,
+      {
+        method: "GET",
+        headers: {
+          token: POSTEX_TOKEN,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
     const data = await response.json();
 
-    res.json(data.dist); // ya pura data.json() agar aapko success/error messages bhi chahiye
+    // ✅ Better response handling
+    if (!data || !data.dist) {
+      return res.status(404).json({
+        success: false,
+        message: "Tracking not found"
+      });
+    }
+
+    res.json(data.dist);
+
   } catch (error) {
     console.error("Tracking API Error:", error);
-    res.status(500).json({ success: false, message: "Server error while fetching tracking data" });
+
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching tracking data"
+    });
   }
 });
 
-app.listen(PORT, () => console.log(`Tracking API running on http://localhost:${PORT}`));
+// ✅ Render-friendly log
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
